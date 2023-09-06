@@ -3,7 +3,7 @@
 <!-- This file includes targets for building FreeCol,
      the metaserver, distribution packages, running tests
      and creating documentation. -->
-<project name="FreeCol" default="package">
+<project name="FreeCol" default="package" xmlns:jacoco="antlib:org.jacoco.ant">
     <description>
         This file includes targets for building FreeCol,
         the metaserver, distribution packages, running tests
