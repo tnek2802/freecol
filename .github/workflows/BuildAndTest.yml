@@ -3,7 +3,7 @@ name: Build and Test
 on:
   push:
     branches:
-      - sf-auto-merge
+      - HAOYANG_BuildAndTest.yml_DockerImageBuild
 
 jobs:
   Docker_buildnpush_image:
