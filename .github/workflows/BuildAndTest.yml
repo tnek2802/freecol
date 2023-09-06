@@ -54,6 +54,18 @@ jobs:
       - name: Test project
         run: ant testall
 
+      - name: Upload Test Execution Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Code execution reports
+          path: build/report
+
+      - name: Upload Code Coverage Artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: Code execution reports
+          path: build/jacocoReport
+
       # Generate a unique identifier for this build (use run_id)
       - name: Generate Unique Identifier
         id: generate-identifier
