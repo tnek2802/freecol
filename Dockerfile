@@ -44,6 +44,6 @@ WORKDIR /freecol
 
 COPY . /freecol
 
-RUN ant
+CMD "ant"
 
 CMD ["java" "-Xmx2000M" "-jar" "FreeCol.jar"]
