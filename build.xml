@@ -3,7 +3,7 @@
 <!-- This file includes targets for building FreeCol,
      the metaserver, distribution packages, running tests
      and creating documentation. -->
-<project name="FreeCol" default="package">
+<project name="FreeCol" default="package" xmlns:jacoco="antlib:org.jacoco.ant">
     <description>
         This file includes targets for building FreeCol,
         the metaserver, distribution packages, running tests
@@ -33,6 +33,13 @@
               value="jars/miglayout-core-5.0.jar"/>
     <property name="cli.jar" value="jars/commons-cli-1.4.jar"/>
     <property name="cortado.jar" value="jars/cortado-0.6.0.jar"/>
+
+    <!-- JACOCO SETUP -->
+    <property name="jacocoant.jar" value="jars/jacocoant.jar"/>
+    <property name="result.exec.file" location="${freecol.build.dir}/jacocoReport/jacoco.exec" />
+	<taskdef uri="antlib:org.jacoco.ant" resource="org/jacoco/ant/antlib.xml">
+		<classpath path="${jacocoant.jar}" />
+	</taskdef>
 
 
     <path id="libraries.classpath">
@@ -648,6 +655,7 @@
             <fileset dir="${freecol.build.dir}" includes="report/**" />
             <fileset dir="${freecol.build.dir}" includes="TEST-net.sf.freecol.*" />
             <fileset dir="${freecol.build.dir}" includes="dependencies.txt" />
+            <fileset dir="${freecol.build.dir}/jacocoReport"/>
             <fileset dir="${freecol.doc.dir}"
                      excludes="*.tex *.sty images/* specification.*" />
         </delete>
@@ -741,20 +749,8 @@
         <delete dir="${freecol.build.dir}/report" />
         <mkdir dir="${freecol.build.dir}/report"/>
         <mkdir dir="${freecol.build.dir}/report/xml"/>
-        <!-- if the next fails then here is the long answer:
-             http://ant.apache.org/faq.html#delegating-classloader
-             the short answer depends.
-             if you have Ant 1.7, the junit.jar can exist on the classpath.
-             upgrading to 1.7 may be the best solution.
-
-             if you have Ant 1.6:
-             ant -lib test/lib/junit.jar testall
-             if you have a version of Ant prior to 1.6 on Windows:
-             set CLASSPATH=%CLASSPATH%;test\lib\junit.jar
-             ant testall
-             if you have a version of Ant prior to 1.6 on UNIX:
-             export CLASSPATH=${CLASSPATH}:test/lib/junit.jar; ant testall
-        -->
+        <mkdir dir="${freecol.build.dir}/jacocoReport"/>
+        <jacoco:coverage destfile="${result.exec.file}">
         <junit printsummary="on" errorProperty="error.junit"
                failureProperty="error.junit" fork="yes" maxmemory="96M">
             <classpath refid="test.run.classpath"/>
@@ -762,14 +758,28 @@
 
             <test todir="${freecol.build.dir}/report/xml"
                   name="net.sf.freecol.AllTests" fork="yes"/>
-
-            <!--
-                <batchtest fork="false" todir="${freecol.build.dir}/report/xml">
-                <fileset dir="test/src" includes="**/*Test.java" />
-                </batchtest>
-            -->
             <sysproperty key="java.awt.headless" value="true" />
         </junit>
+        </jacoco:coverage>
+
+        <jacoco:report>
+			<!-- This task needs the collected execution data and ... -->
+			<executiondata>
+				<file file="${result.exec.file}" />
+			</executiondata>
+
+			<structure name="JaCoCo Ant Report">
+				<classfiles>
+					<fileset dir="${freecol.build.dir}">
+                        <include name="**/*.class" />
+                    </fileset>
+				</classfiles>
+			</structure> 
+
+			<html destdir="${freecol.build.dir}/jacocoReport"/>
+			<csv destfile="${freecol.build.dir}/jacocoReport/report.csv" />
+			<xml destfile="${freecol.build.dir}/jacocoReport/report.xml" /> 
+		</jacoco:report>
 
         <junitreport>
             <fileset dir="${freecol.build.dir}/report/xml">
@@ -1030,43 +1040,6 @@
         </java>
     </target>
 
-    <target name="cobertura" depends="build">
-        <property name="cobertura.dir" value="cobertura" />
-        <path id="cobertura.classpath">
-            <fileset dir="${cobertura.dir}">
-                <include name="cobertura.jar" />
-                <include name="lib/**/*.jar" />
-            </fileset>
-        </path>
-
-        <taskdef classpathref="cobertura.classpath"
-                 resource="tasks.properties" />
-
-        <cobertura-instrument todir="build/instrumented-classes">
-            <fileset dir="build/net">
-                <include name="**/*.class"/>
-            </fileset>
-        </cobertura-instrument>
-
-        <delete dir="${freecol.build.dir}/report" />
-        <mkdir dir="${freecol.build.dir}/report"/>
-        <mkdir dir="${freecol.build.dir}/report/xml"/>
-
-        <junit printsummary="on" errorproperty="error.junit"
-               fork="yes" maxmemory="64M">
-            <classpath location="build/instrumented-classes"/>
-            <classpath location="build/net"/>
-            <classpath refid="cobertura.classpath"/>
-            <classpath refid="test.run.classpath"/>
-            <formatter type="xml" />
-
-            <test todir="${freecol.build.dir}/report/xml"
-                  name="net.sf.freecol.AllTests" fork="yes"/>
-            <sysproperty key="java.awt.headless" value="true" />
-        </junit>
-
-        <cobertura-report srcdir="${freecol.src.dir}"
-                          destdir="cobertura/report"/>
-    </target>
+   
 
 </project>
