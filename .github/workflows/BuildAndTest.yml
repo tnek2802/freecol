@@ -29,7 +29,6 @@ jobs:
         with:
           context: .
           load: true
-          tags: freecol:latest
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
