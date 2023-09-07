@@ -6,7 +6,7 @@ on:
       - HAOYANG_BuildAndTest.yml_DockerImageBuild
 
 jobs:
-  Docker_buildnpush_image:
+  Build_Docker_images:
     runs-on: ubuntu-latest
     steps:
       - name: Check out the repo
