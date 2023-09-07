@@ -14,17 +14,20 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
+
       - name: Build
         uses: docker/build-push-action@v4
         with:
           context: .
-          load: true
-          tags: myimage:latest
+          file: ./Dockerfile
+          tags: name/app:latest
+          outputs: type=oci,dest=/tmp/image.tar
+
       - name: Upload artifact
         uses: actions/upload-artifact@v2
         with:
             name: group3img
-            path: /tmp/group3img.tar 
+            path: /tmp/image.tar 
 
   Build_and_Test:
     runs-on: ubuntu-latest
