@@ -1,58 +1,49 @@
-# Stage 1: Build with JDK 8 for Ant
-FROM openjdk:8 AS builder
+FROM ubuntu:16.04
 
-# Install Ant
-RUN apt-get update && apt-get install -y ant
+MAINTAINER Mohd Hafiz Ramly <mohd_hafiz.ramly@bbraun.com>
+
+# Setup your proxy if required
+#ENV HTTP_PROXY="http://165.225.112.16:10127"
+#ENV HTTPS_POXY="http://165.225.112.16:10127"
+
+# Define your required Apache Ant version here
+ENV ANT_VERSION=1.10.3
+ENV ANT_HOME=/opt/ant
+
+# Run package update
+RUN apt-get update && apt-get upgrade -y
+
+# Install core apps and Java JDK
+RUN apt-get install -y software-properties-common wget git openjdk-8-jdk
+
+# make /bin/sh symlink to bash instead of dash:
+RUN echo "dash dash/sh boolean false" | debconf-set-selections
+RUN DEBIAN_FRONTEND=noninteractive dpkg-reconfigure dash
+
+# Setting up OpenJDK environment
+ENV JAVA_HOME /usr/lib/jvm/java-1.8.0-openjdk-amd64
+
+# Install and setup Apache Ant
+RUN wget --no-check-certificate --no-cookies http://archive.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz \
+    && wget --no-check-certificate --no-cookies http://archive.apache.org/dist/ant/binaries/apache-ant-${ANT_VERSION}-bin.tar.gz.sha512 \
+    && echo "$(cat apache-ant-${ANT_VERSION}-bin.tar.gz.sha512) apache-ant-${ANT_VERSION}-bin.tar.gz" | sha512sum -c \
+    && tar -zvxf apache-ant-${ANT_VERSION}-bin.tar.gz -C /opt/ \
+    && ln -s /opt/apache-ant-${ANT_VERSION} /opt/ant \
+    && rm -f apache-ant-${ANT_VERSION}-bin.tar.gz \
+    && rm -f apache-ant-${ANT_VERSION}-bin.tar.gz.sha512
+
+RUN update-alternatives --install "/usr/bin/ant" "ant" "/opt/ant/bin/ant" 1 && \
+    update-alternatives --set "ant" "/opt/ant/bin/ant" 
+
+ENV ANT_HOME /opt/ant
+
+# Cleaning up
+RUN apt-get autoremove && apt-get autoclean
 
 WORKDIR /freecol
+
 COPY . /freecol
 
-FROM openjdk:11-jdk
-
-# Use the base image with OpenJDK 11
-
-# Update package repositories and install Ant
-RUN apt-get update && \
-    apt-get install -y ant && \
-    apt-get install -y libxext6 libxrender1 libxtst6 && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* \
-
-# Build the application using Ant
 RUN ant
 
-ENV LD_LIBRARY_PATH=/usr/lib/x86_64-linux-gnu
-
-# Start Xvfb with a delay
-# Start Xvfb and redirect output to a log file
-RUN Xvfb :1 -screen 0 1024x768x16 &
-RUN sleep 5
-
-# Set up a virtual display
-ENV DISPLAY=:1
-RUN Xvfb :1 -screen 0 1024x768x16 -fbdir /tmp >> /var/log/xvfb.log 2>&1 &
-
-# Create a non-root user
-RUN useradd -ms /bin/bash tneks
-
-# Set the working directory
-WORKDIR /freecol
-
-# Copy the source code and build files into the container
-COPY . /freecol
-
-# Add Apache Commons CLI library (adjust the path accordingly)
-COPY commons-cli-1.4.jar /commons-cli-1.4.jar
-
-# Create directories for application data and configuration
-RUN mkdir -p /home/tneks/.local/share && \
-    chown -R tneks:tneks /home/tneks/.local && \
-    mkdir -p /freecol && \
-    chown -R tneks:tneks /freecol
-
-# Switch to the non-root user
-USER tneks
-
-EXPOSE 80
-# Specify the command to run the application when the container starts
-CMD ["java", "-Xmx2000M", "-Djava.awt.headless=true", "-cp", "/commons-cli-1.4.jar:build/classes:build/main:build", "net.sf.freecol.FreeCol", "--headless"]
+CMD ["java" "-Xmx2000M" "-jar" "FreeCol.jar"]
